@@ -3,6 +3,7 @@ import axios from "../api/axios";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "./Navbar";
 import AuthService from "../hooks/AuthService";
+import * as signalR from "@microsoft/signalr";
 //base path to access endpoint get all tasks
 const GET_TASKS_URL = "/get-tasks";
 function Tasks() {
@@ -14,6 +15,8 @@ function Tasks() {
     //navigate the user to the login page present unauthorised user
     navigate("/");
   }
+  //connection signalR
+  const [connection, setConnection] = useState(null);
   //payload list of tasks
   const [tasks, setTasks] = useState([]);
   //filter priority
@@ -33,6 +36,35 @@ function Tasks() {
         alert("Failed to retrieve tasks");
       });
   }, []);
+  useEffect(() => {
+    const newConnection = new signalR.HubConnectionBuilder()
+      .withUrl("https://localhost:7129/hub/tasks")
+      .withAutomaticReconnect()
+      .configureLogging(signalR.LogLevel.Debug)
+      .build();
+    setConnection(newConnection);
+  }, []);
+
+  useEffect(() => {
+    if (connection) {
+      connection.start().catch((error) => console.error(error));
+
+      connection.on("TasksHasUpdated", () => {
+        axios
+          .get(GET_TASKS_URL)
+          .then((response) => {
+            //empty the list
+            setTasks([]);
+            //reset the list of tasks
+            setTasks(response.data);
+          })
+          .catch((error) => {
+            //notify user if some error has occured
+            alert("Failed to retrieve tasks");
+          });
+      });
+    }
+  }, [connection]);
   //handle any changes on the priority filter
   const handlePriorityFilterChange = (event) => {
     setPriorityFilter(event.target.value);
