@@ -36,6 +36,7 @@ function Tasks() {
         alert("Failed to retrieve tasks");
       });
   }, []);
+  //open a connection with the server using SignalR
   useEffect(() => {
     const newConnection = new signalR.HubConnectionBuilder()
       .withUrl("https://localhost:7129/hub/tasks")
@@ -45,6 +46,7 @@ function Tasks() {
     setConnection(newConnection);
   }, []);
 
+  //on update of the tasks Create, Edit, and Delete the list going to updated.
   useEffect(() => {
     if (connection) {
       connection.start().catch((error) => console.error(error));
